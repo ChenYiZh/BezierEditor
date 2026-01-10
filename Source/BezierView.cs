@@ -460,14 +460,13 @@ public sealed class BezierCurveView : BezierCurve
         Canvas bezierCanvas,
         Path bezierPath,
         BezierPoint? selectedPoint,
-        Transformer transform,
-        bool bAccurate)
+        Transformer transform)
     {
         Canvas canvas = bezierCanvas;
 
         ClearVisualization(bezierCanvas, bezierPath);
 
-        RefreshPath(mainCanvas, bezierPath, transform, bAccurate);
+        RefreshPath(mainCanvas, bezierPath, transform);
 
         // 为每个点创建可视化元素
         foreach (BezierPoint point in Points)
@@ -520,11 +519,10 @@ public sealed class BezierCurveView : BezierCurve
     /// <param name="mainCanvas">主画布。</param>
     /// <param name="bezierPath">贝塞尔曲线路径。</param>
     /// <param name="transform">坐标变换器。</param>
-    /// <param name="bAccurate">是否使用精确采样模式绘制曲线。</param>
-    private void RefreshPath(Canvas mainCanvas, Path bezierPath, Transformer transform, bool bAccurate)
+    private void RefreshPath(Canvas mainCanvas, Path bezierPath, Transformer transform)
     {
         // 更新贝塞尔曲线路径
-        bezierPath.Data = CreatePathGeometry(mainCanvas, transform, bAccurate);
+        bezierPath.Data = CreatePathGeometry(mainCanvas, transform);
         bezierPath.StrokeThickness = 3;
         bezierPath.RenderTransform = new ScaleTransform(1 / transform.Scale.X, 1 / transform.Scale.Y);
     }
@@ -536,7 +534,7 @@ public sealed class BezierCurveView : BezierCurve
     /// <param name="transform">坐标变换器。</param>
     /// <param name="bAccurate">是否使用精确采样模式绘制曲线。</param>
     /// <returns>路径几何图形。</returns>
-    private PathGeometry CreatePathGeometry(Canvas mainCanvas, Transformer transform, bool bAccurate)
+    private PathGeometry CreatePathGeometry(Canvas mainCanvas, Transformer transform)
     {
         IReadOnlyList<BezierPoint> points = Points;
         if (points.Count < 2)
@@ -550,59 +548,19 @@ public sealed class BezierCurveView : BezierCurve
         BezierPointView firstPoint = (BezierPointView) points[0];
         pathFigure.StartPoint = transform.WorldToScreen(firstPoint.PositionScaled);
 
-        if (bAccurate)
+        // 添加贝塞尔曲线段
+        for (int i = 1; i < points.Count; i++)
         {
-            // 使用 PolyLineSegment 连接所有点
-            PolyLineSegment polyLineSegment = new PolyLineSegment();
-            const int SAMPLE_COUNT = 100;
-            GetValueRange(out double minX, out double _, out double maxX, out double _);
-            double canvasWidth = mainCanvas.ActualWidth;
-            double canvasHeight = mainCanvas.ActualHeight;
-            // 计算视图范围（世界坐标）
-            Vector topLeft = transform.ScreenToWorld(new Point(0, 0));
-            Vector bottomRight = transform.ScreenToWorld(new Point(canvasWidth, canvasHeight));
-            if (topLeft.X > minX)
-            {
-                minX = topLeft.X;
-            }
+            BezierPointView prevPoint = (BezierPointView) points[i - 1];
+            BezierPointView currentPoint = (BezierPointView) points[i];
 
-            if (bottomRight.X < maxX)
-            {
-                maxX = bottomRight.X;
-            }
+            BezierSegment bezierSegment = new BezierSegment(
+                transform.WorldToScreen(prevPoint.PositionScaled + prevPoint.RelativeRightControlScaled),
+                transform.WorldToScreen(currentPoint.PositionScaled + currentPoint.RelativeLeftControlScaled),
+                transform.WorldToScreen(currentPoint.PositionScaled),
+                true);
 
-            // 计算采样步长
-            double step = (maxX - minX) / (SAMPLE_COUNT - 1);
-
-            // 生成采样点
-            for (int i = 0; i < SAMPLE_COUNT; i++)
-            {
-                double x = minX + i * step;
-                double y = -GetValue<double>(x); // 调用自定义函数获取 Y 值
-
-                // 转换为屏幕坐标
-                Point screenPoint = transform.WorldToScreen(new Vector(x, y));
-                polyLineSegment.Points.Add(screenPoint);
-            }
-
-            pathFigure.Segments.Add(polyLineSegment);
-        }
-        else
-        {
-            // 添加贝塞尔曲线段
-            for (int i = 1; i < points.Count; i++)
-            {
-                BezierPointView prevPoint = (BezierPointView) points[i - 1];
-                BezierPointView currentPoint = (BezierPointView) points[i];
-
-                BezierSegment bezierSegment = new BezierSegment(
-                    transform.WorldToScreen(prevPoint.PositionScaled + prevPoint.RelativeRightControlScaled),
-                    transform.WorldToScreen(currentPoint.PositionScaled + currentPoint.RelativeLeftControlScaled),
-                    transform.WorldToScreen(currentPoint.PositionScaled),
-                    true);
-
-                pathFigure.Segments.Add(bezierSegment);
-            }
+            pathFigure.Segments.Add(bezierSegment);
         }
 
         pathGeometry.Figures.Add(pathFigure);

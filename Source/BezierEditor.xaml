@@ -471,13 +471,6 @@
                             Click="OnResetViewScaleClick"
                             ToolTip="等比缩放到最大可支持大小"
                             Style="{StaticResource ModernButtonStyle}" />
-                    <Separator Margin="12,0" />
-                    <CheckBox x:Name="ChkAccurate"
-                              Foreground="White"
-                              Content="精确显示"
-                              Click="OnAccurateCheckBoxClick"
-                              ToolTip="精确显示会更加消耗性能"
-                              Style="{StaticResource ModernTitleCheckBoxStyle}" />
                 </StackPanel>
 
                 <!-- 右侧应用按钮 -->

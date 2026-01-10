@@ -612,8 +612,7 @@ public partial class BezierEditor
     /// </summary>
     private void UpdateVisualization()
     {
-        bezierCurve_.Refresh(MainCanvas, BezierCanvas, BezierPath, selectedPoint_, transform_,
-            ChkAccurate.IsChecked ?? false);
+        bezierCurve_.Refresh(MainCanvas, BezierCanvas, BezierPath, selectedPoint_, transform_);
         UpdatePointCount();
     }
 
@@ -1173,17 +1172,6 @@ public partial class BezierEditor
     private void OnResetViewScaleClick(object sender, RoutedEventArgs e)
     {
         ResetCanvasView(false);
-    }
-
-    /// <summary>
-    /// 精确采样复选框点击事件处理程序。
-    /// </summary>
-    private void OnAccurateCheckBoxClick(object sender, RoutedEventArgs e)
-    {
-        if (bezierCurve_ != null)
-        {
-            UpdateViewTransform();
-        }
     }
 
     /// <summary>
